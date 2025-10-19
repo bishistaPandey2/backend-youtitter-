@@ -272,10 +272,20 @@ const updateUserAvatar = asybcHandler(async(req,res)
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
     if(!avatar.url){
-        throw new ApiError(400, 'Error while updating on avatar');
-
-        
+        throw new ApiError(400, 'Error while updating on avatar');        
     }
+
+
+  // removing user old avatar
+     await User.findByIdAndUpdate(
+          req.user?._id,
+      {
+        $set: {
+          avatar: " "
+        }
+      }
+    )
+
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
