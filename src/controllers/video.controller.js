@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { limit, query, sortBy, sortType, userId } = req.query
+  const { limit = 1, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
 
   const objectQuery = JSON.parse(query)
