@@ -3,10 +3,15 @@ import {
 	getVideoById,
 	publishAVideo,
 	updateVideo,
+  deleteVideo,
+  getAllVideos
 } from "../controllers/video.controller.js";
 import { upload } from "../middleware/multer.js";
+import { verifyJWT } from "../middleware/auth.middleware.js"
 
 const router = Router();
+
+router.use(verifyJWT); //apply jwt middleware to all
 
 router.route("/").post(
 	upload.fields([
@@ -20,9 +25,9 @@ router.route("/").post(
 		},
 	]),
 	publishAVideo,
-);
+).get(getAllVideos);
 
 router.route("/:videoId").get(getVideoById);
-router.route("/:videoId/edit").patch(upload.single("thumbnail"),updateVideo);
+router.route("/:videoId/edit").delete(deleteVideo).patch(upload.single("thumbnail"),updateVideo);
 
 export default router;

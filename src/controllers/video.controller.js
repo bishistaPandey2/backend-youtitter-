@@ -3,10 +3,30 @@ import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary.js";
+
+const getAllVideos = asyncHandler(async (req, res) => {
+  const { limit, query, sortBy, sortType, userId } = req.query
+    //TODO: get all videos based on query, sort, pagination
+
+  const objectQuery = JSON.parse(query)
+
+  // limit = parseInt(limit);
+  const page = parseInt(req.query.page);
+  
+  const sortOrder = sortType === "desc" ? -1 : 1
+  const skip = (page - 1) * limit
+  const everyVideoToQuery = await Video.find(objectQuery).skip(skip).limit(parseInt(limit)).sort({[sortBy]: sortOrder})
+
+  return res
+  .status(200)
+  .json(
+      new ApiResponse(200, everyVideoToQuery, "Here are all the videos")
+    )
+})
 
 const publishAVideo = asyncHandler(async (req, res) => {
-	const { title, description, views } = req.body;
+	const { title, description, views, category} = req.body;
 
 	const videoUrl = req.files?.videoFile[0]?.path;
 	if (!videoUrl) {
@@ -19,21 +39,24 @@ const publishAVideo = asyncHandler(async (req, res) => {
 		Array.isArray(req.files.thumbnail) &&
 		req.files.thumbnail.length > 0
 	) {
-		thumbnailUrl = req.files.thumbnail[0].path;
+		thumbnailUrl = req.files.thumbnail.path;
 	}
 	//const thumbnail = req.files?.path
 
-	const videoFile = await uploadOnCloudinary(videoUrl);
-	const thumbnail = await uploadOnCloudinary(thumbnailUrl);
+	const videoFile = await uploadVideoOnCloudinary(videoUrl);
+	const thumbnail = await uploadVideoOnCloudinary(thumbnailUrl);
 
 	const uploadVideo = await Video.create({
 		videoFile: videoFile.url,
 		thumbnail: thumbnail?.url || " ",
 		title,
 		description,
-		duration: videoFile.duration,
-	});
+		duration: videoFile.duration, // in seconds
+    category: category.toLowerCase(),
+    owner: req.user._id
+	})
 
+  console.log(req.user)
 	return res
 		.status(200)
 		.json(new ApiResponse(200, uploadVideo, "The video is uploaded"));
@@ -100,4 +123,23 @@ const updateVideo = asyncHandler(async (req, res) => {
 		.json(new ApiResponse(200, extractedVideo, "Video is edited!!"));
 });
 
-export { publishAVideo, getVideoById, updateVideo };
+const deleteVideo = asyncHandler(async (req, res) => {
+  const { videoId } = req.params
+    //TODO: delete video
+  if (!videoId){
+    throw new ApiError(400, "Provide video ID!!")
+  }
+
+  const deletedVideo = await Video.findOneAndDelete({_id:videoId})
+  
+  if(!deleteVideo || deletedVideo === null){
+    throw new ApiError(400,"Unable to delete video")
+  } 
+
+  return res
+  .status(200)
+  .json(
+      new ApiResponse(200, deletedVideo, "The video was deleted successfully!")
+    )
+})
+export {getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo};
