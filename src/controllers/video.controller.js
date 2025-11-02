@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary.js";
+import {User} from "../models/user.model.js"
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { limit = 1, query, sortBy, sortType, userId } = req.query
@@ -12,7 +13,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
   const objectQuery = JSON.parse(query)
 
   // limit = parseInt(limit);
-  const page = parseInt(req.query.page);
+    const page = parseInt(req.query.page);
   
   const sortOrder = sortType === "desc" ? -1 : 1
   const skip = (page - 1) * limit
@@ -26,7 +27,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
-	const { title, description, views, category} = req.body;
+	const { title, description, category} = req.body;
 
 	const videoUrl = req.files?.videoFile[0]?.path;
 	if (!videoUrl) {
@@ -53,7 +54,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 		description,
 		duration: videoFile.duration, // in seconds
     category: category.toLowerCase(),
-    owner: req.user._id
+    owner: new mongoose.Types.ObjectId(req.user._id)
 	})
 
   console.log(req.user)
@@ -69,11 +70,17 @@ const getVideoById = asyncHandler(async (req, res) => {
 		throw new ApiError(404, "VideoId not received");
 	}
 
+  await Video.findByIdAndUpdate(
+    videoId,
+    {$inc:{views: 1}},
+    {new: true}
+    
+  )  
 	const wantedVideo = await Video.findById(videoId);
 
 	if (!wantedVideo) {
 		throw new ApiError(404, "No video was found");
-	}
+	} 
 
 	return res
 		.status(200)
@@ -110,7 +117,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 		videoId,
 		{
 			$set: {
-        thumbnail: res.file?.thumbnail || "", //req.file.thumbnail || " ",
+        thumbnail: res.file?.thumbnail.url || "", //req.file.thumbnail || " ",
 				description,
 				title,
 			},
@@ -142,4 +149,25 @@ const deleteVideo = asyncHandler(async (req, res) => {
       new ApiResponse(200, deletedVideo, "The video was deleted successfully!")
     )
 })
-export {getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo};
+
+const toggleVideoPublishStatus = asyncHandler(async(req,res) => {
+  const { videoId } = req.params
+
+  if(!videoId){
+    throw new ApiError(400, "Video not found")
+  }
+
+  const publishedVideo = await Video.findById(videoId,{
+    views: 0
+  })
+
+  if(!publishedVideo.isPublished){
+    throw new ApiError(200, "video is not published for users to see")
+  }
+
+  
+  next()
+
+})
+
+export {getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo, toggleVideoPublishStatus};
