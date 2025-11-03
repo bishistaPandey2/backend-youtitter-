@@ -18,9 +18,12 @@ app.use(cookieParser())
 import userRouter from "./routers/routes.js"
 import videoRouter from "./routers/video.routes.js"
 import commentRouter from "./routers/comments.routes.js"
+import playlistRouter from "./routers/playlist.routes.js"
+
 //routes declration
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/videos", videoRouter)
 app.use("/api/v1/comments", commentRouter)
+app.use("/api/v1/playlists", playlistRouter)
 //https://localhost:8000/api/v1/users/register
 export { app }
