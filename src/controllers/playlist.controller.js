@@ -46,4 +46,20 @@ const getUserPlaylist = asyncHandler(async (req, res) => {
       new ApiResponse(200, playlist, "This is the users playlist you asked for")
     )
 })
-export {createPlaylist, getUserPlaylist}
+
+const getPlaylistById = asyncHandler(async (req, res) => {
+    const {playlistId} = req.params
+    //TODO: get playlist by id
+  const playlist = await Playlist.findById(playlistId)
+
+  if(!playlist) {
+    throw new ApiError(400,"Playlist doesnot exists.")
+  }
+
+  return res
+  .status(200)
+  .json(
+      new ApiResponse(200, playlist, "Here is your playlist!")
+    )
+})
+export {createPlaylist, getUserPlaylist, getPlaylistById}
