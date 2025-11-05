@@ -6,7 +6,8 @@ import {
   getPlaylistById, 
   addVideoToPlaylist, 
   removeVideoFromPlaylist, 
-  deletePlaylist 
+  deletePlaylist,
+  updatePlaylist  
 } from "../controllers/playlist.controller.js"
 
 const router = Router()
@@ -14,7 +15,7 @@ const router = Router()
 router.use(verifyJWT)
 
 router.route("/").post(createPlaylist)
-router.route("/:playlistId").get(getPlaylistById).delete(deletePlaylist)
+router.route("/:playlistId").get(getPlaylistById).delete(deletePlaylist).patch(updatePlaylist )
 router.route("/user/:userId").get(getUserPlaylist)
 router.route("/add/:videoId/:playlistId").post(addVideoToPlaylist) 
 router.route("/remove/:videoId/:playlistId").post(removeVideoFromPlaylist) 
