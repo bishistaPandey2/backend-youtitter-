@@ -51,8 +51,66 @@ const getUserTweets = asyncHandler(async (req, res) => {
     )
 })
 
+const updateTweets = asyncHandler(async (req,res) => {
+  const { tweetId } = req.params
+  const { content } = req.body
+  const tweet = await Tweet.findById(tweetId)
+
+  if(!tweet){
+    throw new ApiError(400, "No tweets were found!")
+  }
+
+  if(!content){
+    throw new ApiError(400, "Please provide content to update.")
+  }
+  
+  const updatedTweet = await Tweet.findByIdAndUpdate(
+    tweetId,
+    {
+      $set: {
+        content  
+      }
+    },
+    {new: true}
+  )
+
+  if(!updatedTweet){
+    throw new ApiError(400, "Something went wrong while updating the tweet!")
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedTweet, "Tweets updated successfully.")
+    )
+
+})
+
+const deleteTweet = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params
+
+  const tweet = await Tweet.findById(tweetId)
+
+  if(!tweet){
+    throw new ApiError(400, "Tweet Not found!")
+  }
+
+  const deletedTweet = await Tweet.findByIdAndDelete(tweetId)
+
+  if(!deletedTweet){
+    throw new ApiError(400, "Something went wrong while uploading the tweet.")
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, {},"The tweet has deen deleted successfully.")
+    )
+})
 
 export {
   createTweet,
-  getUserTweets
+  getUserTweets,
+  updateTweets,
+  deleteTweet 
 }
