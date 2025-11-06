@@ -10,10 +10,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
   const { limit = 1, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
 
-  const objectQuery = JSON.parse(query)
+  // const objectQuery = JSON.parse(query)
 
   // limit = parseInt(limit);
-    const page = parseInt(req.query.page);
+    // const page = parseInt(req.query.page);
   
   const sortOrder = sortType === "desc" ? -1 : 1
   const skip = (page - 1) * limit

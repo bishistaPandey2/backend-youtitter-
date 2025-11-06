@@ -20,11 +20,13 @@ import videoRouter from "./routers/video.routes.js"
 import commentRouter from "./routers/comments.routes.js"
 import playlistRouter from "./routers/playlist.routes.js"
 import tweetsRouter from "./routers/tweet.routes.js"
+import subscriptionsRouter from "./routers/subscription.route.js"
 //routes declration
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/videos", videoRouter)
 app.use("/api/v1/comments", commentRouter)
 app.use("/api/v1/playlists", playlistRouter)
 app.use("/api/v1/tweets", tweetsRouter)
+app.use("/api/v1/subscriptions", subscriptionsRouter)
 //https://localhost:8000/api/v1/users/register
 export { app }
