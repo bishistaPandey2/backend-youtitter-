@@ -3,7 +3,10 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const videoSchema = new Schema({
     videoFile: {
-        type: String, // cludinary
+        type: {
+          url: String,
+          path: String
+        },
         required: true
     },
     thumbnail: {
@@ -34,10 +37,6 @@ const videoSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User'
     },
-    category: {
-        type: String,
-        required: true
-    }
 }, {timestamps: true})
 
 videoSchema.plugin(mongooseAggregatePaginate);

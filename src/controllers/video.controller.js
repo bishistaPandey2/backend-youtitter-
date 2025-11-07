@@ -7,22 +7,81 @@ import { uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary
 import {User} from "../models/user.model.js"
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { limit = 1, query, sortBy, sortType, userId } = req.query
-    //TODO: get all videos based on query, sort, pagination
+  const { page= 1,limit = 10, query, sortBy, sortType, userId } = req.query
 
-  // const objectQuery = JSON.parse(query)
+  const pipeline = [];
 
-  // limit = parseInt(limit);
-    // const page = parseInt(req.query.page);
-  
-  const sortOrder = sortType === "desc" ? -1 : 1
-  const skip = (page - 1) * limit
-  const everyVideoToQuery = await Video.find(objectQuery).skip(skip).limit(parseInt(limit)).sort({[sortBy]: sortOrder})
+  if(query){
+    pipeline.push({
+      $search: {
+        index: "search-videos",
+        text: {
+          query: query,
+          path: ["title","description"]// serch only on title and desc
+        }
+      }
+    })
+  }
+
+  if(userId){
+    if(!mongoose.Types.ObjectId.isValid(userId)){
+      throw new ApiError(400, "Invalid user id")
+    }
+    pipeline.push({
+      $match: {
+        owner: new mongoose.Types.ObjectId(userId)
+      }
+    })
+  }
+
+  if(sortBy && sortType){
+    pipeline.push({
+      $sort: {
+        [sortBy]: sortby === "asc"? -1 : 1 
+      }
+    })
+  } else {
+    pipeline.push({ $sort: { createdAt: -1 } });
+  }
+
+  pipeline.push({
+    $lookup: {
+      from: "users",
+      localField: "owner",
+      foreignField: "_id",
+      as: "ownerDetails",
+      pipeline: [
+        {
+          $project: {
+            username:1,
+            avatar:1
+          }
+        }
+      ]
+    },
+    },
+    {
+      $unwind: "$ownerDetails"
+    },
+  )
+
+
+  const videoAggregate = Video.aggregate(pipeline)
+
+  const options = {
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10)
+  }
+
+  const video = await Video.aggregatePaginate(
+    videoAggregate,
+    options
+  )
 
   return res
-  .status(200)
-  .json(
-      new ApiResponse(200, everyVideoToQuery, "Here are all the videos")
+    .status(200)
+    .json(
+      new ApiResponse(200, video, "here is your video")
     )
 })
 
@@ -47,13 +106,17 @@ const publishAVideo = asyncHandler(async (req, res) => {
 	const videoFile = await uploadVideoOnCloudinary(videoUrl);
 	const thumbnail = await uploadVideoOnCloudinary(thumbnailUrl);
 
+  console.log(videoFile)
+
 	const uploadVideo = await Video.create({
-		videoFile: videoFile.url,
+		videoFile: {
+      url: videoFile.url,
+      publicId: videoFile.public_id
+    },
 		thumbnail: thumbnail?.url || " ",
 		title,
 		description,
 		duration: videoFile.duration, // in seconds
-    category: category.toLowerCase(),
     owner: new mongoose.Types.ObjectId(req.user._id)
 	})
 
