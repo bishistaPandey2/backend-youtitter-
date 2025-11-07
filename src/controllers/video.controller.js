@@ -149,6 +149,45 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "video",
+        as: "videoComments",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "commentOwner",
+              pipeline: [
+                {
+                  $project: {
+                    username: 1,
+                    avatar: 1
+                  }
+                }
+              ]
+            },
+          },
+          {
+            $addFields:{
+              owner: {
+                $first: "$commentOwner"
+              }
+            }
+          },
+          {
+            $project: {
+              content: 1,
+              owner:1
+            }
+          }
+        ]
+      }
+    },
+    {
+      $lookup: {
         from: "users",
         localField: "owner",
         foreignField: "_id",
@@ -197,6 +236,9 @@ const getVideoById = asyncHandler(async (req, res) => {
         likes: {
           $size: "$videoLikes"
         },
+        owner: {
+          $first: "$owner"
+        },
         isLiked: {
           $cond: {
             if: {
@@ -208,6 +250,9 @@ const getVideoById = asyncHandler(async (req, res) => {
             then: true,
             else: false
           }
+        },
+        commentsCount: {
+          $size: "$videoComments"
         }
       }
     },
@@ -221,7 +266,9 @@ const getVideoById = asyncHandler(async (req, res) => {
         createdAt: 1,
         owner: 1,
         likes: 1,
-        isLiked: 1
+        isLiked: 1,
+        videoComments: 1,
+        commentsCount: 1 
       }
     }
   ])
@@ -241,12 +288,6 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     {new: true}
   )
-
-	const wantedVideo = await Video.findById(videoId);
-
-	if (!wantedVideo) {
-		throw new ApiError(404, "No video was found");
-	} 
 
 	return res
 		.status(200)
