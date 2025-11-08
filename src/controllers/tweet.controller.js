@@ -37,17 +37,79 @@ const getUserTweets = asyncHandler(async (req, res) => {
   if(!user){
     throw new ApiError(400, "No user found!")
   }
+  
+  const userTweetsAggregate = await Tweet.aggregate([
+    {
+      $match: {
+        owner: new mongoose.Types.ObjectId(userId) 
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              avatar: 1,
+            }
+          }
+        ]
+      }
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "tweet",
+        as: "tweetLikes"
+      }
+    },
+    {
+      $sort: {
+        createdAt: -1
+      }
+    },
+    {
+      $addFields: {
+        likes: {
+          $size: "$tweetLikes"
+        },
+        owner: {
+          $first: "$owner"
+        },
+        isLiked: {
+          $cond: {
+            if: {
+              $in:[req.user._id, "$tweetLikes.likedBy"]
+            },
+            then: true,
+            else: false
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        content: 1,
+        createdAt: 1,
+        owner: 1,
+        likes: 1,
+        isLiked: 1
+      }
+    }
+  ])
 
-  const userTweets = await Tweet.find({owner: userId})
-
-  if(!userTweets){
-    throw new ApiError(400, "Tweet cannot be found!")
+  if(!userTweetsAggregate){
+    throw new ApiError("Something went wrong while fetching tweets.")
   }
-
   return res
     .status(200)
     .json(
-      new ApiResponse(200, userTweets, "Tweets fetched successfully.")
+      new ApiResponse(200, userTweetsAggregate, "Tweets fetched successfully.")
     )
 })
 
